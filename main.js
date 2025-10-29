@@ -1,10 +1,17 @@
 const SHA256 = require('crypto-js/sha256');
 
+class Transaction {
+    constructor(fromAdress, toAddress, amount) {
+        this.fromAdress = fromAdress;
+        this.toAddress = toAddress;
+        this.amount = amount;
+    }
+}
+
 class Block {
-    constructor(index, timestamp, data, previousHash = '') {
-        this.index = index;
+    constructor(timestamp, transactions, previousHash = '') {
         this.timestamp = timestamp;
-        this.data = data;
+        this.transactions = transactions;
         this.previousHash = previousHash;
         this.hash = this.calculateHash();
         this.nonce = 0;
@@ -12,10 +19,9 @@ class Block {
 
     calculateHash() {
         return SHA256(
-            this.index +
             this.previousHash +
             this.timestamp +
-            JSON.stringify(this.data) +
+            JSON.stringify(this.transactions) +
             this.nonce
         ).toString();
     }
@@ -35,6 +41,8 @@ class Blockchain {
     constructor() {
         this.chain = [this.createGenesisBlock()];
         this.difficulty = 5;
+        this.pendingTransactions = []
+        this.miningReward = 100;
     }
 
     createGenesisBlock() {
@@ -50,6 +58,20 @@ class Blockchain {
         // newBlock.hash = newBlock.calculateHash();
         newBlock.mineBlock(this.difficulty);
         this.chain.push(newBlock);
+    }
+
+    mindPendingTransactions(miningRewardAddress) {
+        let newBlock = new Block(Date.now(), this.pendingTransactions)
+        newBlock.previousHash = this.getLatestBlock().hash;
+        newBlock.mineBlock(this.difficulty)
+
+        console.log("block sucessfull mined!")
+        this.chain.push(newBlock)
+
+        this.pendingTransactions = [
+            new Transaction(null, miningRewardAddress, this.miningReward)
+        ]
+
     }
 
     isChainValid() {
@@ -68,28 +90,76 @@ class Blockchain {
         return true;
     }
 
+    createTransaction(transaction) {
+        this.pendingTransactions.push(transaction);
+    }
+
+    getBalanceOfAddress(address) {
+        let balance = 0;
+        for (const block of this.chain) {
+            for (const trans of block.transactions) {
+                if (address == trans.fromAdress) {
+                    balance -= trans.amount;
+                }
+
+                if (address == trans.toAddress) {
+                    balance += trans.amount;
+                }
+            }
+        }
+        return balance;
+    }
+
     printChain() {
         console.log(JSON.stringify(this.chain, null, 4));
     }
 }
 
-// Example usage:
-let myCoin = new Blockchain();
-// myCoin.addBlock(new Block(1, Date.now().toString(), { amount: 4 }));
-// myCoin.addBlock(new Block(2, Date.now().toString(), { amount: 10 }));
 
-// console.log('Is blockchain valid? ' + myCoin.isChainValid());
-// myCoin.printChain();
+let stableVndtCoiin = new Blockchain();
+// PART 1 TEST
+// stableVndtCoiin.addBlock(new Block(1, Date.now().toString(), { amount: 4 }));
+// stableVndtCoiin.addBlock(new Block(2, Date.now().toString(), { amount: 10 }));
 
-// myCoin.chain[1].data = { amount: 5 }; // Tampering with the data
-// myCoin.chain[1].hash = myCoin.chain[1].calculateHash(); // Recalculate hash after tampering
+// console.log('Is blockchain valid? ' + stableVndtCoiin.isChainValid());
+// stableVndtCoiin.printChain();
+// --------------------------------------------------------------------------------------------------
 
-// console.log('Is blockchain still valid? ' + myCoin.isChainValid());
-// myCoin.printChain();            
+// stableVndtCoiin.chain[1].transactions = { amount: 5 }; // Tampering with the transactions
+// stableVndtCoiin.chain[1].hash = stableVndtCoiin.chain[1].calculateHash(); // Recalculate hash after tampering
 
+// console.log('Is blockchain still valid? ' + stableVndtCoiin.isChainValid());
+// stableVndtCoiin.printChain();            
+// --------------------------------------------------------------------------------------------------
 
-console.log('Mining block 1...');
-myCoin.addBlock(new Block(1, Date.now().toString(), { amount: 4 }));
+// PART 2 TEST
+// console.log('Mining block 1...');
+// stableVndtCoiin.addBlock(new Block(1, Date.now().toString(), { amount: 4 }));
 
-console.log('Mining block 2...');
-myCoin.addBlock(new Block(2, Date.now().toString(), { amount: 10 }));
+// console.log('Mining block 2...');
+// stableVndtCoiin.addBlock(new Block(2, Date.now().toString(), { amount: 10 }));
+// --------------------------------------------------------------------------------------------------
+
+// PART 3 TEST
+stableVndtCoiin.createTransaction(new Transaction('nick-address', 'steve-address', 10000))
+stableVndtCoiin.createTransaction(new Transaction('steve-address', 'nick-address', 1))
+
+console.log("\n Starting the miner ....")
+stableVndtCoiin.mindPendingTransactions('steve-wallet-address')
+
+console.log("\n Steve wallet balance", stableVndtCoiin.getBalanceOfAddress('steve-wallet-address'))
+// --------------------------------------------------------------------------------------------------
+
+console.log("\n Starting the miner again ....")
+stableVndtCoiin.mindPendingTransactions('steve-wallet-address')
+
+console.log("\n Steve wallet balance", stableVndtCoiin.getBalanceOfAddress('steve-wallet-address'))
+// --------------------------------------------------------------------------------------------------
+
+stableVndtCoiin.createTransaction(new Transaction('steve-wallet-address', 'nick-address', 10))
+
+console.log("\n Starting the miner 2nd again ....")
+stableVndtCoiin.mindPendingTransactions('steve-wallet-address')
+
+console.log("\n Steve wallet balance", stableVndtCoiin.getBalanceOfAddress('steve-wallet-address'))
+// --------------------------------------------------------------------------------------------------
