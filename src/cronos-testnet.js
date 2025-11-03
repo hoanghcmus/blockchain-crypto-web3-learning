@@ -25,7 +25,7 @@ async function sendTCRO() {
     const receipt = await tx.wait();
     console.log("✅ Giao dịch thành công!");
     console.log(`Tx Hash: ${receipt.hash}`);
-    console.log(`Xem tại: https://testnet.cronoscan.com/tx/${receipt.hash}`);
+    console.log(`Xem tại: https://explorer.cronos.org/testnet/address/0xb82dc9d470ccd9f40d6d8ef74a3d006c1959a90d`);
 }
 
 sendTCRO().catch(console.error);
